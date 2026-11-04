@@ -1,0 +1,76 @@
+# AgentDrift Sentinel for LLMs and Autonomous Agents
+> An automated security & context guard preventing AI instruction-code desynchronization across CLAUDE.md, AGENTS.md, .cursorrules, .windsurfrules, .clinerules, OPENHANDS.md, and 45+ agent rule files.
+
+## Summary
+AgentDrift Sentinel is a zero-dependency Python 3 and GitHub Action utility that correlates Pull Request diffs with AI agent context files to detect:
+1. Renamed files still referenced by old paths in agent rules (auto-generates unified diff patch).
+2. Deleted files/directories still referenced as targets in agent rules.
+3. Removed package.json scripts or Makefile targets that agent rules still instruct the AI to execute.
+4. Unregistered environment variables in agent rules missing from .env.example.
+
+## Machine-Readable CLI Execution for Bots
+Bots and automated agents can invoke AgentDrift Sentinel directly and receive structured JSON output:
+
+```bash
+# Run audit and output structured JSON to stdout:
+python -m src.agentdrift.cli --repo-root . --json
+
+# Or using the package executable:
+agentdrift --repo-root . --format json
+```
+
+## JSON Output Schema
+```json
+{
+  "drift_detected": true,
+  "drift_count": 1,
+  "error_count": 1,
+  "warning_count": 0,
+  "info_count": 0,
+  "inspected_rule_files": ["CLAUDE.md"],
+  "git_base_ref": "origin/main",
+  "issues": [
+    {
+      "rule_file": "CLAUDE.md",
+      "line_number": 14,
+      "drift_type": "renamed_path",
+      "severity": "error",
+      "title": "Renamed file referenced in CLAUDE.md:14",
+      "description": "File `src/auth.ts` was renamed to `src/auth/index.ts`...",
+      "current_reference": "src/auth.ts",
+      "suggested_fix": {
+        "rule_file": "CLAUDE.md",
+        "line_number": 14,
+        "original_line": "Core auth logic is in `src/auth.ts`",
+        "replacement_line": "Core auth logic is in `src/auth/index.ts`",
+        "explanation": "Update reference `src/auth.ts` -> `src/auth/index.ts`"
+      },
+      "metadata": {
+        "old_path": "src/auth.ts",
+        "new_path": "src/auth/index.ts"
+      }
+    }
+  ],
+  "suggested_patch": "--- a/CLAUDE.md\n+++ b/CLAUDE.md\n@@ -14,1 +14,1 @@\n-Core auth logic is in `src/auth.ts`\n+Core auth logic is in `src/auth/index.ts`\n"
+}
+```
+
+## How Bots Can Auto-Apply Fixes
+When an agent or bot detects `suggested_patch` in the output:
+```bash
+# 1. Capture patch to file
+python -m src.agentdrift.cli --repo-root . --json | jq -r .suggested_patch > drift.patch
+
+# 2. Apply patch with git
+git apply drift.patch
+```
+
+## GitHub Action Invocation
+```yaml
+- name: Audit Agent Drift
+  uses: skyinc9/agentdrift-sentinel@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    output-format: 'json'
+    fail-on-drift: false
+```

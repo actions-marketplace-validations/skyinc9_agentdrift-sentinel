@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentdrift"
+version = "1.0.0"
+authors = [
+  { name="AgentDrift Sentinel" },
+]
+description = "AI Instruction-Code Desync Guard for CLAUDE.md, AGENTS.md, and .cursorrules"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+
+[project.scripts]
+agentdrift = "src.agentdrift.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

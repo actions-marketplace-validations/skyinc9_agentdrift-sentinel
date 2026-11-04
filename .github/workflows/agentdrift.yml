@@ -1,0 +1,28 @@
+name: AgentDrift Sentinel
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  audit-agent-rules:
+    name: Audit AI Instruction Drift
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run AgentDrift Sentinel
+        uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fail-on-drift: false
+          auto-suggest-fixes: true
+          comment-on-pr: true

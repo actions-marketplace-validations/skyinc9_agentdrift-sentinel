@@ -1,0 +1,104 @@
+name: 'AgentDrift Sentinel'
+description: 'Detect and prevent AI instruction-code desync across CLAUDE.md, AGENTS.md, .cursorrules, .windsurfrules, Copilot, Cline, and 45+ agent instruction files.'
+author: 'AgentDrift Sentinel'
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  github-token:
+    description: 'GitHub token for posting PR comments and check runs'
+    required: false
+    default: ${{ github.token }}
+  rules-paths:
+    description: 'Comma or newline-separated file paths or glob patterns for agent instruction files to audit (defaults to auto-discovering all supported agent instruction files)'
+    required: false
+    default: ''
+  fail-on-drift:
+    description: 'Fail workflow run if high-severity desynchronization is detected'
+    required: false
+    default: 'false'
+  fail-severity:
+    description: 'Minimum severity level to trigger failure (error, warning, info)'
+    required: false
+    default: 'error'
+  auto-suggest-fixes:
+    description: 'Generate copy-paste replacement snippets or unified diffs to fix desynced rules'
+    required: false
+    default: 'true'
+  comment-on-pr:
+    description: 'Post an interactive desync analysis comment directly to the Pull Request'
+    required: false
+    default: 'true'
+  check-paths:
+    description: 'Check if referenced file and directory paths still exist or were renamed/deleted in PR'
+    required: false
+    default: 'true'
+  check-commands:
+    description: 'Check if referenced commands and scripts exist in package.json, Makefile, pyproject.toml, etc.'
+    required: false
+    default: 'true'
+  check-env-vars:
+    description: 'Check if referenced environment variables exist in .env.example or config files'
+    required: false
+    default: 'true'
+  base-ref:
+    description: 'Target base branch or commit ref to compare against (defaults to PR base ref or HEAD~1)'
+    required: false
+    default: ''
+  output-format:
+    description: 'Output format to log to stdout (markdown or json)'
+    required: false
+    default: 'markdown'
+
+outputs:
+  drift-detected:
+    description: 'Whether any instruction-code drift was detected (true/false)'
+    value: ${{ steps.run-sentinel.outputs.drift-detected }}
+  drift-count:
+    description: 'Total number of drift issues detected'
+    value: ${{ steps.run-sentinel.outputs.drift-count }}
+  error-count:
+    description: 'Total number of high-severity drift errors detected'
+    value: ${{ steps.run-sentinel.outputs.error-count }}
+  warning-count:
+    description: 'Total number of medium-severity drift warnings detected'
+    value: ${{ steps.run-sentinel.outputs.warning-count }}
+  drift-summary:
+    description: 'Markdown formatted summary of detected desync issues'
+    value: ${{ steps.run-sentinel.outputs.drift-summary }}
+  suggested-patch:
+    description: 'Unified diff or suggested update for agent rule files'
+    value: ${{ steps.run-sentinel.outputs.suggested-patch }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: ''
+
+    - name: Run AgentDrift Sentinel
+      id: run-sentinel
+      shell: bash
+      env:
+        PYTHONPATH: ${{ github.action_path }}/src
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_RULES_PATHS: ${{ inputs.rules-paths }}
+        INPUT_FAIL_ON_DRIFT: ${{ inputs.fail-on-drift }}
+        INPUT_FAIL_SEVERITY: ${{ inputs.fail-severity }}
+        INPUT_AUTO_SUGGEST_FIXES: ${{ inputs.auto-suggest-fixes }}
+        INPUT_COMMENT_ON_PR: ${{ inputs.comment-on-pr }}
+        INPUT_CHECK_PATHS: ${{ inputs.check-paths }}
+        INPUT_CHECK_COMMANDS: ${{ inputs.check-commands }}
+        INPUT_CHECK_ENV_VARS: ${{ inputs.check-env-vars }}
+        INPUT_BASE_REF: ${{ inputs.base-ref }}
+        INPUT_OUTPUT_FORMAT: ${{ inputs.output-format }}
+        GITHUB_EVENT_PATH: ${{ github.event_path }}
+        GITHUB_STEP_SUMMARY: ${{ github.step_summary }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_OUTPUT: ${{ github.output }}
+      run: |
+        python "${{ github.action_path }}/src/agentdrift/cli.py"
