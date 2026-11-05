@@ -1,5 +1,5 @@
 name: 'AgentDrift Sentinel'
-description: 'Detect and prevent AI instruction-code desync across CLAUDE.md, AGENTS.md, .cursorrules, .windsurfrules, Copilot, Cline, and 45+ agent instruction files.'
+description: 'Detect and prevent AI instruction drift across CLAUDE.md, AGENTS.md, .cursorrules, and 45+ agent formats.'
 author: 'AgentDrift Sentinel'
 branding:
   icon: 'shield'
